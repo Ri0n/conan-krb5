@@ -59,9 +59,6 @@ class Krb5Conan(ConanFile):
     def source(self):
         self.run("git clone https://github.com/krb5/krb5.git " + self.subfolder)
         self.run("cd %s && git checkout %s" % (self.subfolder, self.krb5_commit))
-        tools.patch(base_path=self.subfolder,
-                    patch_file=os.path.join(self.source_folder,"krb5_win.patch"),
-                    strip=1)
 
     @property
     def subfolder(self):
@@ -84,6 +81,9 @@ class Krb5Conan(ConanFile):
         self.output.warn("----------MAKE Kerberos FOR WINDOWS. %s-------------" % self.version)
         debug = "" if self.settings.build_type == "Debug" else "NODEBUG=1"
         arch = "i386" if self.settings.arch == "x86" else "AMD64"
+        
+        tools.patch(base_path=self.subfolder,
+                    patch_file=os.path.join(self.source_folder,"krb5_win.patch"))
         
         config_options_string = "NO_LEASH=1 " + debug
         #configure_type = debug + "VC-WIN" + arch
