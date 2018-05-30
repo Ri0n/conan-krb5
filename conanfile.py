@@ -48,30 +48,27 @@ class Krb5Conan(ConanFile):
     default_options = "shared=True"
     exports_sources = ["krb5_win.patch"]
     
-    krb5_commit = "9ef59b469dc433cc52860db6196e5e47c5ec7817" # 1.16.1 + windows fixes
+    scm = {
+        "type": "git",
+        "subfolder": "krb5",
+        "url": "https://github.com/krb5/krb5.git",
+        "revision": "9ef59b469dc433cc52860db6196e5e47c5ec7817" # 1.16.1 + windows fixes
+    }
 
     def build_requirements(self):
         # useful for example for conditional build_requires
         if self.settings.compiler == "Visual Studio":
             self.build_requires("strawberryperl/5.26.0@conan/stable")
             self.build_requires("msys2_installer/latest@bincrafters/stable") # for cat and sed
-    
-    def source(self):
-        self.run("git clone https://github.com/krb5/krb5.git " + self.subfolder)
-        self.run("cd %s && git checkout %s" % (self.subfolder, self.krb5_commit))
-
-    @property
-    def subfolder(self):
-        return self.name + "-" + self.version
         
     # copied from OpenSSL recipe
-    def run_in_src(self, command, show_output=False, cwd="."):
+    def run_in_src(self, command, show_output=False):
         if not show_output and self.settings.os != "Windows":
             command += ' | while read line; do printf "%c" .; done'
             # pipe doesn't fail if first part fails
             command = 'bash -l -c -o pipefail "%s"' % command.replace('"', '\\"')
-        with tools.chdir(self.subfolder):
-            self.run(command, cwd=cwd)
+        with tools.chdir("krb5\\src"):
+            self.run(command)
         self.output.writeln(" ")
     
     # copied from OpenSSL recipe    
@@ -82,44 +79,44 @@ class Krb5Conan(ConanFile):
         debug = "" if self.settings.build_type == "Debug" else "NODEBUG=1"
         arch = "i386" if self.settings.arch == "x86" else "AMD64"
         
-        tools.patch(base_path=self.subfolder,
-                    patch_file=os.path.join(self.source_folder,"krb5_win.patch"))
+        tools.patch(base_path="krb5", patch_file=os.path.join(self.source_folder,"krb5_win.patch"))
         
         config_options_string = "NO_LEASH=1 " + debug
-        #configure_type = debug + "VC-WIN" + arch
-        #no_asm = "no-asm" if self.options.no_asm else ""
-        # Will output binaries to ./binaries
+        os.environ['CPU'] = arch
         with tools.vcvars(self.settings, filter_known_paths=False):
             prep_command = "nmake -f Makefile.in prep-windows"
             self.output.warn(prep_command)
-            self.run_in_src(prep_command, show_output=True, cwd="src")
-            
-            os.environ['CPU'] = arch
-            os.environ['KRB_INSTALL_DIR'] = os.path.join(os.getcwd(), "conan_install", str(self.settings.arch))
+            self.run_in_src(prep_command, show_output=True)
             whole_command = "nmake %s" % config_options_string
             self.output.warn(whole_command + " clean")
-            self.run_in_src(whole_command + " clean", cwd="src")
+            self.run_in_src(whole_command + " clean")
             
             with remove_from_path_wrong_version("link", lambda p: "Microsoft Visual Studio" in p):
                 self.output.warn(whole_command)
-                self.run_in_src(whole_command, show_output=True, cwd="src")
+                self.run_in_src(whole_command, show_output=True)
+                self.output.warn(whole_command + " install")
+                self.run_in_src(whole_command + " install", show_output=True)
         
     def build(self):
+        os.environ['KRB_INSTALL_DIR'] = os.path.join(self.source_folder, "conan_install")
+        if not os.path.exists(os.environ['KRB_INSTALL_DIR']):
+            os.makedirs(os.environ['KRB_INSTALL_DIR'])
         if self.settings.compiler == "Visual Studio":
             self.visual_build()
         else:
             raise Exception("Unsupported operating system: %s" % self.settings.os)
 
     def package(self):
-        self.copy("lmdb.h", dst="include", src="lmdb\\libraries\\liblmdb")
-        self.copy("*lmdb*.lib", dst="lib", keep_path=False)
-        self.copy("*.dll", dst="bin", keep_path=False)
-        self.copy("*.so", dst="lib", keep_path=False)
-        self.copy("*.dylib", dst="lib", keep_path=False)
-        self.copy("*.a", dst="lib", keep_path=False)
+        install_dir = os.path.join(self.source_folder, "conan_install")
+        self.copy("*.h", dst="include", src=os.path.join(install_dir, "include"))
+        self.copy("*.dll", dst="bin", src=os.path.join(install_dir, "bin"), keep_path=False)
+        self.copy("*.so", dst="lib", src=os.path.join(install_dir, "lib"), keep_path=False)
+        self.copy("*.dylib", dst="lib", src=os.path.join(install_dir, "lib"), keep_path=False)
+        self.copy("*.a", dst="lib", src=os.path.join(install_dir, "lib"), keep_path=False)
+        self.copy("*.lib", dst="lib", src=os.path.join(install_dir, "lib"), keep_path=False)
 
-    def package_info(self):
-        prefix = ["lib",""][self.options.shared == True]
-        postfix = ["","d"][self.settings.get_safe("build_type") == "Debug"]
-        self.cpp_info.libs = [prefix + "lmdb" + postfix]
+    #def package_info(self):
+    #    prefix = ["lib",""][self.options.shared == True]
+    #    postfix = ["","d"][self.settings.get_safe("build_type") == "Debug"]
+    #    self.cpp_info.libs = [prefix + "lmdb" + postfix]
 
