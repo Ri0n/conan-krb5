@@ -1,0 +1,24 @@
+diff --git a/src/ccapi/test/Makefile.in b/src/ccapi/test/Makefile.in
+index 85fe172..64e50fa 100644
+--- a/src/ccapi/test/Makefile.in
++++ b/src/ccapi/test/Makefile.in
+@@ -135,7 +135,7 @@ MORE_TESTS =    test_cc_context_release \
+ ##### Linker
+ LINK	= link
+ LIBS    = -lkrb5
+-##DOS##LIBS = $(CLIB) $(SLIB) advapi32.lib rpcrt4.lib user32.lib ws2_32.lib $(CCLIB).lib
++##DOS##LIBS = $(CLIB) $(SLIB) advapi32.lib rpcrt4.lib user32.lib ws2_32.lib ..\lib\win\srctmp\$(CCLIB).lib
+ LFLAGS	= /nologo $(LOPTS)
+ 
+ all-mac:     setup-test-dir pingtest simple_lock_test build-base build-tests link-tests copy-script success-message
+@@ -192,10 +192,6 @@ $(OUTPRE)pingtest.exe: $(OBJECTS) $(PINGOBJS)
+ #  deletes a.tmp and the following nmake actions correct LIB.
+ 	echo %%PATH%% > a.tmp
+     perl setlib.pl
+-    if not exist a.tmp (
+-        @echo Adding ..\lib\win\srctmp to LIB
+-        set LIB=%%LIB%%;..\lib\win\srctmp
+-        )
+     $(LINK) $(linkdebug) /map:$(@B)1.map -out:$(*B)1.exe $(conflags) $(PINGOBJS) $(LIBS)
+ 	$(LINK) $(LFLAGS)    /map:$(@B)2.map /out:$(*B)2.exe $(conflags) $(PINGOBJS) $(LIBS) $(conlibsdll)
+ 

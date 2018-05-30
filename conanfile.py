@@ -46,6 +46,7 @@ class Krb5Conan(ConanFile):
     settings = "os", "compiler", "build_type", "arch"
     options = {"shared": [True]}
     default_options = "shared=True"
+    exports_sources = ["krb5_win.patch"]
     
     krb5_commit = "9ef59b469dc433cc52860db6196e5e47c5ec7817" # 1.16.1 + windows fixes
 
@@ -58,6 +59,9 @@ class Krb5Conan(ConanFile):
     def source(self):
         self.run("git clone https://github.com/krb5/krb5.git " + self.subfolder)
         self.run("cd %s && git checkout %s" % (self.subfolder, self.krb5_commit))
+        tools.patch(base_path=self.subfolder,
+                    patch_file=os.path.join(self.source_folder,"krb5_win.patch"),
+                    strip=1)
 
     @property
     def subfolder(self):
