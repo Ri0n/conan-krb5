@@ -107,16 +107,10 @@ class Krb5Conan(ConanFile):
             raise Exception("Unsupported operating system: %s" % self.settings.os)
 
     def package(self):
-        install_dir = os.path.join(self.source_folder, "conan_install")
+        install_dir = "conan_install"
         self.copy("*.h", dst="include", src=os.path.join(install_dir, "include"))
         self.copy("*.dll", dst="bin", src=os.path.join(install_dir, "bin"), keep_path=False)
         self.copy("*.so", dst="lib", src=os.path.join(install_dir, "lib"), keep_path=False)
         self.copy("*.dylib", dst="lib", src=os.path.join(install_dir, "lib"), keep_path=False)
         self.copy("*.a", dst="lib", src=os.path.join(install_dir, "lib"), keep_path=False)
         self.copy("*.lib", dst="lib", src=os.path.join(install_dir, "lib"), keep_path=False)
-
-    #def package_info(self):
-    #    prefix = ["lib",""][self.options.shared == True]
-    #    postfix = ["","d"][self.settings.get_safe("build_type") == "Debug"]
-    #    self.cpp_info.libs = [prefix + "lmdb" + postfix]
-
