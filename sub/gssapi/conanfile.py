@@ -23,4 +23,6 @@ class Kerberos5GssAPI(ConanFile):
         
         
     def package(self):
-        self.copy("*")
+        self.copy("bin/*")
+        self.copy("lib/*")
+        self.copy("include/*")

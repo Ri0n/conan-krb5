@@ -22,4 +22,5 @@ class Kerberos5WinExtra(ConanFile):
             self.copy(n + "*.lib",   dst="lib", src="lib")
 
     def package(self):
-        self.copy("*")
+        self.copy("bin/*")
+        self.copy("lib/*")
