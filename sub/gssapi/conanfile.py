@@ -26,3 +26,11 @@ class Kerberos5GssAPI(ConanFile):
         self.copy("bin/*")
         self.copy("lib/*")
         self.copy("include/*")
+    
+    def package_info(self):
+        if self.settings.os == "Windows":
+            is64 = self.settings.arch == "x86_64" or self.settings.arch == "armv8"
+            postfix = "64" if is64 else "32"
+            self.cpp_info.libs = ["gssapi" + postfix]
+        else:
+            self.cpp_info.libs = ["gssapi"]
